@@ -48,7 +48,8 @@ export const userValidationSchema = Joi.object({
 export const adminValidationSchema = Joi.object({
     userName: Joi.string().required(),
     email: Joi.string().required().trim().lowercase(),
-    password: Joi.string().required()
+    password: Joi.string().required(),
+    confirmPassword: Joi.string().valid(Joi.ref('password'))
 })
 
 
