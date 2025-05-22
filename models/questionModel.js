@@ -1,31 +1,57 @@
-import mongoose from "mongoose";
+import { Schema, model, Types } from "mongoose";
 
-const QuestionSchema = new mongoose.Schema({
+const QuestionSchema = new Schema({
+ 
   text: {
     type: String,
-    required: [true, 'Please add question text']
+    required: [true, 'Please add question text'],
+    trim: true
   },
+ 
   language: {
     type: String,
     required: [true, 'Please specify language'],
     enum: ['twi', 'ewe', 'fante', 'ga']
   },
+ 
   type: {
     type: String,
     required: true,
-    enum: ['multiple-choice', 'fill-in-blank', 'audio-recognition', 'image-word', 'spelling']
+    enum: ['multiple-choice', 'fill-in-blank', 'spelling']
   },
-  options: [String],
-  correctAnswer: {
-    type: mongoose.Schema.Types.Mixed,
-    required: true
+  
+  options: [{
+    text: {
+      type: String,
+      required: true,
+      trim: true
+    },
+   
+    isCorrect: {
+      type: Boolean,
+      required: true
+    }
+  }],
+ 
+  explanation: {
+    type: String,
+    required: true,
+    trim: true
   },
-  difficultyLevel: {
+ 
+  points: {
     type: Number,
     required: true,
     min: 1,
-    max: 5
+    max: 10
   },
+ 
+  difficultyLevel: {
+    type: String,
+    enum: ['beginner', 'intermediate', 'advanced'],
+    required: true
+  },
+ 
   ageRange: {
     min: {
       type: Number,
@@ -40,24 +66,27 @@ const QuestionSchema = new mongoose.Schema({
       max: 12
     }
   },
+ 
   category: {
     type: String,
     required: true,
-    enum: ['vocabulary', 'grammar', 'pronunciation', 'reading', 'writing', 'listening']
+    enum: ['vocabulary', 'grammar', 'pronunciation', 'reading', 'writing']
   },
-  imageUrl: String,
-  audioUrl: String,
+  // imageUrl: String,
+  // audioUrl: String,
+ 
   points: {
     type: Number,
     default: 10
   },
+ 
   hint: String,
   createdAt: {
     type: Date,
     default: Date.now
   }
-},{
-    timestamps:true
+}, {
+  timestamps: true
 });
 
-export const questionModel = ('Questions', QuestionSchema)
+export const questionModel = model('Questions', QuestionSchema)

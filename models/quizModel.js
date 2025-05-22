@@ -1,22 +1,31 @@
-import mongoose from "mongoose";
+import { Schema, model, Types } from "mongoose";
 
-const quizSchema = new mongoose.Schema({
+const quizSchema = new Schema({
   title: {
     type: String,
-    required: [true, 'Please add a quiz title']
+    required: [true, 'Please add a quiz title'],
+    trim: true
   },
+
+  description: {
+    type: String,
+    required: true,
+    trim: true
+  },
+
   language: {
     type: String,
     required: [true, 'Please specify language'],
-    enum: ['english', 'spanish', 'french', 'german', 'chinese', 'japanese']
+    enum: ['twi', 'ewe', 'fante', 'ga']
   },
-  description: String,
-  difficultyLevel: {
-    type: Number,
-    required: true,
-    min: 1,
-    max: 5
+ 
+ difficulty: {
+    type: String,
+    enum: ['beginner', 'intermediate', 'advanced'],
+    required: true
   },
+  
+ 
   ageRange: {
     min: {
       type: Number,
@@ -32,27 +41,32 @@ const quizSchema = new mongoose.Schema({
     }
   },
   questions: [{
-    type: mongoose.Schema.ObjectId,
-    ref: 'Question'
+    type: Schema.Types.ObjectId,
+    ref: 'Questions',
+    required: true
   }],
   category: {
     type: String,
     required: true,
-    enum: ['vocabulary', 'grammar', 'pronunciation', 'reading', 'writing', 'listening', 'mixed']
+    enum: ['vocabulary', 'grammar', 'pronunciation', 'reading', 'writing']
   },
-  timeLimit: {
-    type: Number, // in seconds
-    default: 300
-  },
-  requiredScore: {
+ 
+  totalPoints: {
     type: Number,
-    default: 70 // percentage to pass
+    default: 0
   },
-  imageUrl: String,
+  
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+ 
+  
+  // imageUrl: String,
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-export const quizModel = ('Quizes', quizSchema)
+export const quizModel = model('Quizes', quizSchema)

@@ -1,227 +1,174 @@
-// const Question = require('../models/Question');
-// const { getAgeAppropriateContent } = require('../utils/ageAppropriateContent');
+import { questionModel } from '../models/questionModel.js';
+import { ApiError } from '../utils/ApiError.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
-// @desc    Create new question
-// @route   POST /api/v1/questions
-// @access  Private/Parent
-export const createQuestion = async (req, res) => {
-  try {
-    const question = await Question.create(req.body);
+//   Create new question
 
-    res.status(201).json({
-      success: true,
-      data: question
-    });
-  } catch (err) {
-    res.status(400).json({
-      success: false,
-      message: err.message
-    });
+export const createQuestion = asyncHandler(async (req, res) => {
+  const question = await questionModel.create(req.body);
+  res.status(201).json({
+    success: true,
+    data: question
+  });
+});
+
+//    Get all questions with filtering, sorting, and pagination
+
+export const getQuestions = asyncHandler(async (req, res) => {
+  let query = { ...req.query };
+  
+  // Fields to exclude from filtering
+  const excludeFields = ['page', 'sort', 'limit', 'fields'];
+  excludeFields.forEach(field => delete query[field]);
+  
+  // Advanced filtering
+  let queryStr = JSON.stringify(query);
+  queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
+  query = JSON.parse(queryStr);
+
+  // Building query
+  let questionQuery = questionModel.find(query);
+
+  // Sorting
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(',').join(' ');
+    questionQuery = questionQuery.sort(sortBy);
+  } else {
+    questionQuery = questionQuery.sort('-createdAt');
   }
-};
 
-//  Get all questions
-
-export const getQuestions = async (req, res) => {
-  try {
-    let query;
-
-    // Copy req.query
-    const reqQuery = { ...req.query };
-
-    // Fields to exclude
-    const removeFields = ['select', 'sort', 'page', 'limit'];
-
-    // Loop over removeFields and delete them from reqQuery
-    removeFields.forEach(param => delete reqQuery[param]);
-
-    // Create query string
-    let queryStr = JSON.stringify(reqQuery);
-
-    // Create operators ($gt, $gte, etc)
-    queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
-
-    // Finding resource
-    query = Question.find(JSON.parse(queryStr));
-
-    // Select Fields
-    if (req.query.select) {
-      const fields = req.query.select.split(',').join(' ');
-      query = query.select(fields);
-    }
-
-    // Sort
-    if (req.query.sort) {
-      const sortBy = req.query.sort.split(',').join(' ');
-      query = query.sort(sortBy);
-    } else {
-      query = query.sort('-createdAt');
-    }
-
-    // Pagination
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 25;
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const total = await Question.countDocuments();
-
-    query = query.skip(startIndex).limit(limit);
-
-    // Executing query
-    const questions = await query;
-
-    // Age appropriate filter if user is a child
-    let filteredQuestions = questions;
-    if (!req.user.isParent) {
-      filteredQuestions = questions.filter(question => 
-        question.ageRange.min <= req.user.age && 
-        question.ageRange.max >= req.user.age
-      );
-    }
-
-    // Pagination result
-    const pagination = {};
-
-    if (endIndex < total) {
-      pagination.next = {
-        page: page + 1,
-        limit
-      };
-    }
-
-    if (startIndex > 0) {
-      pagination.prev = {
-        page: page - 1,
-        limit
-      };
-    }
-
-    res.status(200).json({
-      success: true,
-      count: filteredQuestions.length,
-      pagination,
-      data: filteredQuestions
-    });
-  } catch (err) {
-    res.status(400).json({
-      success: false,
-      message: err.message
-    });
+  // Field limiting
+  if (req.query.fields) {
+    const fields = req.query.fields.split(',').join(' ');
+    questionQuery = questionQuery.select(fields);
   }
-};
 
-//Get single question
+  // Pagination
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+  const total = await questionModel.countDocuments(query);
 
-export const getQuestion = async (req, res) => {
-  try {
-    const question = await Question.findById(req.params.id);
+  questionQuery = questionQuery.skip(startIndex).limit(limit);
 
-    if (!question) {
-      return res.status(404).json({
-        success: false,
-        message: `No question found with id of ${req.params.id}`
-      });
-    }
+  // Execute query
+  const questions = await questionQuery;
 
-    // Check if question is appropriate for user's age
-    if (!req.user.isParent && 
-        (question.ageRange.min > req.user.age || 
-         question.ageRange.max < req.user.age)) {
-      return res.status(403).json({
-        success: false,
-        message: 'This question is not appropriate for your age'
-      });
-    }
+  // Pagination result
+  const pagination = {};
 
-    res.status(200).json({
-      success: true,
-      data: question
-    });
-  } catch (err) {
-    res.status(400).json({
-      success: false,
-      message: err.message
-    });
+  if (endIndex < total) {
+    pagination.next = {
+      page: page + 1,
+      limit
+    };
   }
-};
 
-//Update question
+  if (startIndex > 0) {
+    pagination.prev = {
+      page: page - 1,
+      limit
+    };
+  }
 
-export const updateQuestion = async (req, res) => {
-  try {
-    const question = await Question.findByIdAndUpdate(req.params.id, req.body, {
+  res.status(200).json({
+    success: true,
+    count: questions.length,
+    pagination,
+    data: questions
+  });
+});
+
+//    Get single question
+
+export const getQuestion = asyncHandler(async (req, res) => {
+  const question = await questionModel.findById(req.params.id);
+  
+  if (!question) {
+    throw new ApiError(404, 'Question not found');
+  }
+
+  res.status(200).json({
+    success: true,
+    data: question
+  });
+});
+
+//     Update question
+
+export const updateQuestion = asyncHandler(async (req, res) => {
+  let question = await questionModel.findById(req.params.id);
+
+  if (!question) {
+    throw new ApiError(404, 'Question not found');
+  }
+
+  question = await questionModel.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    {
       new: true,
       runValidators: true
-    });
-
-    if (!question) {
-      return res.status(404).json({
-        success: false,
-        message: `No question found with id of ${req.params.id}`
-      });
     }
+  );
 
-    res.status(200).json({
-      success: true,
-      data: question
-    });
-  } catch (err) {
-    res.status(400).json({
-      success: false,
-      message: err.message
-    });
+  res.status(200).json({
+    success: true,
+    data: question
+  });
+});
+
+//   Delete question
+
+export const deleteQuestion = asyncHandler(async (req, res) => {
+  const question = await questionModel.findById(req.params.id);
+
+  if (!question) {
+    throw new ApiError(404, 'Question not found');
   }
-};
 
-// Delete question
+  await question.deleteOne();
 
-export const deleteQuestion = async (req, res) => {
-  try {
-    const question = await Question.findById(req.params.id);
+  res.status(200).json({
+    success: true,
+    data: {}
+  });
+});
 
-    if (!question) {
-      return res.status(404).json({
-        success: false,
-        message: `No question found with id of ${req.params.id}`
-      });
-    }
+//   Get questions by language
 
-    await question.remove();
+export const getQuestionsByLanguage = asyncHandler(async (req, res) => {
+  const questions = await questionModel.find({ language: req.params.language });
 
-    res.status(200).json({
-      success: true,
-      data: {}
-    });
-  } catch (err) {
-    res.status(400).json({
-      success: false,
-      message: err.message
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    count: questions.length,
+    data: questions
+  });
+});
 
-// Get questions by language and difficulty
+//    Get questions by difficulty level
 
-export const getQuestionsByLanguageAndDifficulty = async (req, res) => {
-  try {
-    const { language, difficulty } = req.params;
-    
-    const questions = await Question.find({
-      language,
-      difficultyLevel: difficulty,
-      'ageRange.min': { $lte: req.user.age },
-      'ageRange.max': { $gte: req.user.age }
-    });
+export const getQuestionsByDifficulty = asyncHandler(async (req, res) => {
+  const questions = await questionModel.find({ difficultyLevel: req.params.level });
 
-    res.status(200).json({
-      success: true,
-      count: questions.length,
-      data: questions
-    });
-  } catch (err) {
-    res.status(400).json({
-      success: false,
-      message: err.message
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    count: questions.length,
+    data: questions
+  });
+});
+
+//    Get questions by category
+ 
+
+export const getQuestionsByCategory = asyncHandler(async (req, res) => {
+  const questions = await questionModel.find({ category: req.params.category });
+
+  res.status(200).json({
+    success: true,
+    count: questions.length,
+    data: questions
+  });
+});

@@ -45,6 +45,18 @@ export const userValidationSchema = Joi.object({
     confirmPassword: Joi.string().valid(Joi.ref('password'))
 });
 
+export const adminValidationSchema = Joi.object({
+    userName: Joi.string().required(),
+    email: Joi.string().required().trim().lowercase(),
+    password: Joi.string().required()
+})
+
+
+
+
+
+
+
 // For validating update operations (making fields optional)
 export const userUpdateValidationSchema = userValidationSchema.fork(
     ['userName', 'email', 'age', 'password', 'confirmPassword'],

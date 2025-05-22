@@ -92,3 +92,5 @@ if (error){
     }
  });
 }
+
+//REGISTER ADMIN CONTROLLER
