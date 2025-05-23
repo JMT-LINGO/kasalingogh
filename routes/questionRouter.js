@@ -10,8 +10,9 @@ import {
   getQuestionsByDifficulty,
   getQuestionsByCategory,
   getQuestionStats,
-  verifyAdmin
+  
 } from '../controllers/questionController.js';
+import { verifyAdmin } from "../middlewares/auth.js";
 
 
 
