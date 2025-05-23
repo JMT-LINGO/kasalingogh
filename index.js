@@ -22,7 +22,7 @@ app.use('/api', quizRouter)
 
 
 
-const port = process.env.PORT || 3000;
-app.listen(port,() => {
-    console.log(`KasaLingoGh Server is active on ${port}`);
-})
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`KasaLingoGh Server is running on port ${PORT}`);
+});
