@@ -12,8 +12,18 @@ export const isAuthenticated = expressjwt({
 // Middleware to verify admin authentication
 export const verifyAdmin = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer', '');
+    const authHeader = req.header('Authorization');
     
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access denied. No valid token provided.'
+      });
+    }
+
+    // Extract token properly
+    const token = authHeader.replace('Bearer ', '').trim();
+
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -21,9 +31,10 @@ export const verifyAdmin = async (req, res, next) => {
       });
     }
 
+    // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const admin = await adminModel.findById(decoded.id);
-    
+
     if (!admin) {
       return res.status(401).json({
         success: false,
@@ -31,12 +42,30 @@ export const verifyAdmin = async (req, res, next) => {
       });
     }
 
+    // Attach admin to request object
     req.admin = admin;
     next();
   } catch (error) {
+    console.error('Token verification error:', error);
+    
+    // Provide more specific error messages
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token format.'
+      });
+    }
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token has expired.'
+      });
+    }
+    
     return res.status(401).json({
       success: false,
-      message: 'Invalid token.'
+      message: 'Token verification failed.'
     });
   }
 };
