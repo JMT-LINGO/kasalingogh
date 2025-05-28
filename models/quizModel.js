@@ -48,7 +48,7 @@ const quizSchema = new Schema({
   category: {
     type: String,
     required: true,
-    enum: ['vocabulary', 'grammar', 'pronunciation', 'reading', 'writing']
+    enum: ['vocabulary', 'grammar', 'reading', 'writing']
   },
  
   totalPoints: {
@@ -62,11 +62,9 @@ const quizSchema = new Schema({
   },
  
   
-  // imageUrl: String,
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+ 
+},{
+  timestamps:true
 });
 
-export const quizModel = model('Quizes', quizSchema)
+export const quizModel = model('Quizzes', quizSchema)

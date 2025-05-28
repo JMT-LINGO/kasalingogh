@@ -15,9 +15,10 @@ app.use(express.json());
 
 app.use(cors());
 
+
 app.use('/api', userRouter)
 app.use('/api', questionRouter)
-app.use('/api', quizRouter)
+app.use('/api/quizzes', quizRouter)
 
 
 
@@ -26,3 +27,8 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`KasaLingoGh Server is running on port ${PORT}`);
 });
+
+
+
+
+
