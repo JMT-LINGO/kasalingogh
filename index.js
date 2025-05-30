@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import userRouter from './routes/userRouter.js';
 import questionRouter from './routes/questionRouter.js';
 import quizRouter from './routes/quizRouter.js';
+import storiesRouter from './routes/storiesRouter.js';
 
 //Connect Database
 await mongoose.connect(process.env.MONGO_URL);
@@ -19,6 +20,7 @@ app.use(cors());
 app.use('/api', userRouter)
 app.use('/api', questionRouter)
 app.use('/api/quizzes', quizRouter)
+app.use('/api', storiesRouter)
 
 
 
